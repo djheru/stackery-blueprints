@@ -93,6 +93,8 @@ dist
 
 # Serverless directories
 .serverless/
+.stackery
+.aws-sam
 
 # FuseBox cache
 .fusebox/
