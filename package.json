@@ -1,0 +1,37 @@
+{
+  "name": "stackery-blueprints",
+  "version": "1.0.0",
+  "description": "Blueprints for stackery.io",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/djheru/stackery-blueprints.git"
+  },
+  "keywords": [
+    "boilerplate"
+  ],
+  "author": "Philip Damra",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/djheru/stackery-blueprints/issues"
+  },
+  "homepage": "https://github.com/djheru/stackery-blueprints#readme",
+  "workspaces": [
+    "packages/*",
+    "functions/*"
+  ],
+  "devDependencies": {
+    "@nighttrax/eslint-config-tsx": "~6.3.0",
+    "doctoc": "~1.4.0",
+    "eslint": "~7.12.0",
+    "lerna": "~3.22.0",
+    "typescript": "~4.0.0"
+  },
+  "scripts": {
+    "docs": "doctoc --title '**Table of content**' README.md",
+    "clean": "lerna run clean",
+    "build": "lerna run build",
+    "pub": "lerna publish",
+    "test": "lerna run test"
+  }
+}
