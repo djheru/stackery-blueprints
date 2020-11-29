@@ -50,7 +50,7 @@ Resources:
       Description: !Sub
         - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
         - ResourceName: AddGroup
-      CodeUri: ./build/add-group
+      CodeUri: build/add-group
       Handler: index.handler
       Runtime: nodejs12.x
       MemorySize: 3008
@@ -65,8 +65,6 @@ Resources:
     Properties:
       TypeName: Mutation
       DataSourceName: !GetAtt APIToAddGroupDataSource.Name
-      # RequestMappingTemplateS3Location: graphql/Mutation-addGroup-request.vm
-      # ResponseMappingTemplateS3Location: graphql/Mutation-addGroup-response.vm
       ApiId: !GetAtt API.ApiId
       FieldName: addGroup
     DependsOn: APISchema
@@ -98,6 +96,59 @@ Resources:
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource: !GetAtt AddGroup.Arn
+  APIMutationaddDealershipResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      TypeName: Mutation
+      DataSourceName: !GetAtt APIToAddDealershipDataSource.Name
+      ApiId: !GetAtt API.ApiId
+      FieldName: addDealership
+    DependsOn: APISchema
+  AddDealership:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-AddDealership
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: AddDealership
+      CodeUri: build/add-dealership
+      Handler: index.handler
+      Runtime: nodejs12.x
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+    Metadata:
+      RuntimeOption: typescript
+  APIToAddDealershipDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      Type: AWS_LAMBDA
+      ServiceRoleArn: !GetAtt APIToAddDealershipAccessRole.Arn
+      ApiId: !GetAtt API.ApiId
+      Name: AddDealership
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt AddDealership.Arn
+  APIToAddDealershipAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: appsync.amazonaws.com
+          Action: sts:AssumeRole
+      RoleName: !Sub ${AWS::StackName}-API-to-AddDealer
+      Policies:
+        - PolicyName: Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt AddDealership.Arn
 Parameters:
   StackTagName:
     Type: String
