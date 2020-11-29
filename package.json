@@ -21,7 +21,6 @@
     "functions/*"
   ],
   "devDependencies": {
-    "@nighttrax/eslint-config-tsx": "~6.3.0",
     "doctoc": "~1.4.0",
     "eslint": "~7.12.0",
     "lerna": "~3.22.0",

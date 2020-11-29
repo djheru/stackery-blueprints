@@ -1,9 +1,16 @@
 {
   "compilerOptions": {
+    "declaration": true,
+    "experimentalDecorators": true,
+    "esModuleInterop": true,
     "module": "commonjs",
     "target": "es5",
     "sourceMap": true,
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "emitDecoratorMetadata": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
 
   "exclude": ["node_modules", "dist"]
