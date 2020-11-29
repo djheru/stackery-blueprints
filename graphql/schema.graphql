@@ -44,7 +44,7 @@ type Group {
   url: String!
   phone: String!
   admins: [String]!
-  activation: ActivationState!
+  activation: ActivationState
   dealerships: [Dealership!]
 }
 
@@ -69,7 +69,7 @@ type Dealership {
   admins: [String]!
   slug: String!
   dealerid: String
-  activation: ActivationState!
+  activation: ActivationState
   roleName: String!
   dealershipName: String!
   dealershipId: String!
@@ -99,7 +99,7 @@ type AddDealershipPayload {
   phone: String!
   brand: String!
   slug: String!
-  activation: ActivationState!
+  activation: ActivationState
 }
 
 type AddGroupPayload {
@@ -112,7 +112,7 @@ type AddGroupPayload {
   zip: String!
   url: String!
   phone: String!
-  activation: ActivationState!
+  activation: ActivationState
 }
 
 type UpdateDealershipPayload {
@@ -128,7 +128,7 @@ type UpdateDealershipPayload {
   phone: String!
   brand: String!
   slug: String!
-  activation: ActivationState!
+  activation: ActivationState
 }
 
 type UpdateGroupPayload {
@@ -141,7 +141,7 @@ type UpdateGroupPayload {
   zip: String!
   url: String!
   phone: String!
-  activation: ActivationState!
+  activation: ActivationState
 }
 
 input DealershipsFilter {
@@ -206,9 +206,10 @@ input AddDealershipInput {
   zip: String!
   url: String!
   phone: String!
+  admins: [String]!
   brand: String!
   slug: String!
-  activation: ActivationState!
+  activation: ActivationState
 }
 
 input AddGroupInput {
@@ -221,36 +222,39 @@ input AddGroupInput {
   zip: String!
   url: String!
   phone: String!
-  activation: ActivationState!
+  admins: [String]!
+  activation: ActivationState
 }
 
 input UpdateDealershipInput {
   currentDealership: String
-  dealershipId: String!
+  id: String!
   groupId: String
-  name: String!
-  street: String!
-  city: String!
-  state: String!
-  country: String!
-  zip: String!
-  url: String!
-  phone: String!
-  brand: String!
-  slug: String!
-  activation: ActivationState!
+  name: String
+  street: String
+  city: String
+  state: String
+  country: String
+  zip: String
+  url: String
+  phone: String
+  admins: [String]
+  brand: String
+  slug: String
+  activation: ActivationState
 }
 
 input UpdateGroupInput {
   currentDealership: String
   id: String!
-  name: String!
-  street: String!
-  city: String!
-  state: String!
-  country: String!
-  zip: String!
-  url: String!
-  phone: String!
-  activation: ActivationState!
+  name: String
+  street: String
+  city: String
+  state: String
+  country: String
+  zip: String
+  url: String
+  phone: String
+  admins: [String]
+  activation: ActivationState
 }

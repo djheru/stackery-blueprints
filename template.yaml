@@ -23,7 +23,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           Effect: Allow
           Principal:
@@ -33,7 +33,7 @@ Resources:
       Policies:
         - PolicyName: Log
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -58,6 +58,28 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref DealershipDBRootUserSecret
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rds-data:BatchExecuteStatement
+                - rds-data:BeginTransaction
+                - rds-data:CommitTransaction
+                - rds-data:ExecuteStatement
+                - rds-data:RollbackTransaction
+              Resource:
+                - !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${EnvironmentTagName}/*
+      Environment:
+        Variables:
+          DB_ID: !Ref DealershipDB
+          DB_ADDRESS: !GetAtt DealershipDB.Endpoint.Address
+          DB_PORT: !GetAtt DealershipDB.Endpoint.Port
+          DB_ARN: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
+          DB_ROOT_USER_SECRET_ARN: !Ref DealershipDBRootUserSecret
+          SECRETS_NAMESPACE: !Sub /${EnvironmentTagName}/
     Metadata:
       RuntimeOption: typescript
   APIMutationaddGroupResolver:
@@ -81,7 +103,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           Effect: Allow
           Principal:
@@ -91,7 +113,7 @@ Resources:
       Policies:
         - PolicyName: Access
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action: lambda:InvokeFunction
@@ -119,6 +141,28 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref DealershipDBRootUserSecret
+        - Statement:
+            - Effect: Allow
+              Action:
+                - rds-data:BatchExecuteStatement
+                - rds-data:BeginTransaction
+                - rds-data:CommitTransaction
+                - rds-data:ExecuteStatement
+                - rds-data:RollbackTransaction
+              Resource:
+                - !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${EnvironmentTagName}/*
+      Environment:
+        Variables:
+          DB_ID: !Ref DealershipDB
+          DB_ADDRESS: !GetAtt DealershipDB.Endpoint.Address
+          DB_PORT: !GetAtt DealershipDB.Endpoint.Port
+          DB_ARN: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
+          DB_ROOT_USER_SECRET_ARN: !Ref DealershipDBRootUserSecret
+          SECRETS_NAMESPACE: !Sub /${EnvironmentTagName}/
     Metadata:
       RuntimeOption: typescript
   APIToAddDealershipDataSource:
@@ -134,7 +178,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           Effect: Allow
           Principal:
@@ -144,11 +188,74 @@ Resources:
       Policies:
         - PolicyName: Access
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource: !GetAtt AddDealership.Arn
+  DealershipDB:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      BackupRetentionPeriod: 1
+      DatabaseName: dealerships
+      DBSubnetGroupName: !Ref DealershipDBSubnetGroup
+      Engine: aurora-postgresql
+      EngineMode: serverless
+      MasterUsername: !Sub '{{resolve:secretsmanager:${DealershipDBRootUserSecret}:SecretString:username}}'
+      MasterUserPassword: !Sub '{{resolve:secretsmanager:${DealershipDBRootUserSecret}:SecretString:password}}'
+      EnableHttpEndpoint: true
+      ScalingConfiguration:
+        AutoPause: false
+        MinCapacity: 2
+        MaxCapacity: 8
+      StorageEncrypted: true
+      VpcSecurityGroupIds:
+        - !Ref DealershipDBSecurityGroup
+  DealershipDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Subnets
+        - ResourceName: DealershipDB
+      SubnetIds: !Ref DefaultVPCSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Subnets
+            - ResourceName: DealershipDB
+  DealershipDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Database Security Group
+      SecurityGroupIngress:
+        CidrIp: 0.0.0.0/0
+        FromPort: 5432
+        IpProtocol: tcp
+        ToPort: 5432
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Security Group
+            - ResourceName: DealershipDB
+      VpcId: !Ref DefaultVPCId
+  DealershipDBRootUserSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: !Sub
+        - Root user login info for Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName}
+        - ResourceName: DealershipDB
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "root"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+      Name: !Sub /${EnvironmentTagName}/${StackTagName}/DealershipDB/RootUser
+  DealershipDBRootUserSecretAttachment:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId: !Ref DealershipDBRootUserSecret
+      TargetId: !Ref DealershipDB
+      TargetType: AWS::RDS::DBCluster
 Parameters:
   StackTagName:
     Type: String
@@ -156,3 +263,9 @@ Parameters:
   EnvironmentTagName:
     Type: String
     Description: Environment Name (injected by Stackery at deployment time)
+  DefaultVPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: AWS account-specific default VPC ID (injected by Stackery at deployment time)
+  DefaultVPCSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: AWS account-specific default VPC subnets (injected by Stackery at deployment time)

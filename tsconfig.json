@@ -4,11 +4,10 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@nighttrax/*": ["packages/*/src"]
+      "@dealership/*": ["packages/*/src"]
     },
     "jsx": "react",
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "types": []
+    "skipLibCheck": true
   }
 }
