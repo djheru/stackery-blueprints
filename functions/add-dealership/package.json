@@ -1,0 +1,20 @@
+{
+  "name": "@dealership/add-dealership",
+  "description": "Handler for the dealership GraphQL service addDealership mutation",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "webpack",
+    "test": "yarn run build"
+  },
+  "dependencies": {
+    "@dealership/utils": "*"
+  },
+  "devDependencies": {
+    "webpack": "~4.43.0",
+    "webpack-cli": "~3.3.12",
+    "ts-loader": "~8.0.0",
+    "tsconfig-paths-webpack-plugin": "~3.2.0"
+  }
+}
