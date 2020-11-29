@@ -1,0 +1,256 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  dealerships(input: DealershipsInput!): DealershipsResult
+  dealership(input: DealershipInput!): Dealership
+  groups(input: GroupsInput!): GroupsResult
+  group(input: GroupInput!): Group
+}
+type Mutation {
+  addDealership(input: AddDealershipInput!): AddDealershipPayload
+  addGroup(input: AddGroupInput!): AddGroupPayload
+  updateDealership(input: UpdateDealershipInput!): UpdateDealershipPayload
+  updateGroup(input: UpdateGroupInput!): UpdateGroupPayload
+}
+
+enum ActivationState {
+  enabled
+  disabled
+}
+
+enum SortDirection {
+  asc
+  desc
+}
+
+enum DealershipsSortFields {
+  name
+  id
+  groupname
+  brand
+}
+
+type Group {
+  id: ID!
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  admins: [String]!
+  activation: ActivationState!
+  dealerships: [Dealership!]
+}
+
+type Role {
+  roleName: String!
+  isTemplate: Boolean!
+  policies: [String!]
+}
+
+type Dealership {
+  id: ID!
+  group: Group!
+  name: String!
+  brand: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  admins: [String]!
+  slug: String!
+  dealerid: String
+  activation: ActivationState!
+  roleName: String!
+  dealershipName: String!
+  dealershipId: String!
+  role: Role!
+}
+
+type DealershipsResult {
+  total: Int!
+  dealerships: [Dealership!]
+}
+
+type GroupsResult {
+  total: Int!
+  groups: [Group!]
+}
+
+type AddDealershipPayload {
+  id: ID!
+  groupId: ID!
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  brand: String!
+  slug: String!
+  activation: ActivationState!
+}
+
+type AddGroupPayload {
+  id: ID!
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  activation: ActivationState!
+}
+
+type UpdateDealershipPayload {
+  id: ID!
+  groupId: String
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  brand: String!
+  slug: String!
+  activation: ActivationState!
+}
+
+type UpdateGroupPayload {
+  id: ID!
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  activation: ActivationState!
+}
+
+input DealershipsFilter {
+  activation: [ActivationState]
+}
+
+input DealershipsSortDescription {
+  field: DealershipsSortFields!
+  direction: SortDirection
+}
+
+input DealershipsInput {
+  currentDealership: String
+  filters: DealershipsFilter
+  search: String
+  sort: [DealershipsSortDescription]
+  offset: Int
+  limit: Int
+}
+
+input DealershipInput {
+  currentDealership: String
+  id: ID!
+}
+
+input GroupsFilter {
+  activation: [ActivationState]
+}
+
+input GroupsSortDescription {
+  field: GroupsSortFields!
+  direction: SortDirection
+}
+
+enum GroupsSortFields {
+  name
+  city
+}
+
+input GroupsInput {
+  currentDealership: String
+  filters: GroupsFilter
+  search: String
+  sort: [GroupsSortDescription]
+  offset: Int
+  limit: Int
+}
+
+input GroupInput {
+  currentDealership: String
+  id: ID!
+}
+
+input AddDealershipInput {
+  currentDealership: String
+  groupId: String!
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  brand: String!
+  slug: String!
+  activation: ActivationState!
+}
+
+input AddGroupInput {
+  currentDealership: String
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  activation: ActivationState!
+}
+
+input UpdateDealershipInput {
+  currentDealership: String
+  dealershipId: String!
+  groupId: String
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  brand: String!
+  slug: String!
+  activation: ActivationState!
+}
+
+input UpdateGroupInput {
+  currentDealership: String
+  id: String!
+  name: String!
+  street: String!
+  city: String!
+  state: String!
+  country: String!
+  zip: String!
+  url: String!
+  phone: String!
+  activation: ActivationState!
+}

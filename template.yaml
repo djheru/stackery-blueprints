@@ -1,2 +1,107 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
+Resources:
+  API:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${StackTagName} Environment ${EnvironmentTagName}
+        - ResourceName: API
+      AuthenticationType: OPENID_CONNECT
+      LogConfig:
+        FieldLogLevel: ALL
+        CloudWatchLogsRoleArn: !GetAtt APILogsRole.Arn
+      XrayEnabled: true
+      OpenIDConnectConfig:
+        Issuer: https://demo-automatic-dealerinspire.auth0.com/
+  APISchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt API.ApiId
+      DefinitionS3Location: graphql/schema.graphql
+  APILogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: appsync.amazonaws.com
+          Action: sts:AssumeRole
+      RoleName: !Sub ${AWS::StackName}-API-logs
+      Policies:
+        - PolicyName: Log
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/appsync/apis/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/appsync/apis/*:log-stream:*
+  AddGroup:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-AddGroup
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: AddGroup
+      CodeUri: ./build/add-group
+      Handler: index.handler
+      Runtime: nodejs12.x
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
+    Metadata:
+      RuntimeOption: typescript
+  APIMutationaddGroupResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      TypeName: Mutation
+      DataSourceName: !GetAtt APIToAddGroupDataSource.Name
+      # RequestMappingTemplateS3Location: graphql/Mutation-addGroup-request.vm
+      # ResponseMappingTemplateS3Location: graphql/Mutation-addGroup-response.vm
+      ApiId: !GetAtt API.ApiId
+      FieldName: addGroup
+    DependsOn: APISchema
+  APIToAddGroupDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      Type: AWS_LAMBDA
+      ServiceRoleArn: !GetAtt APIToAddGroupAccessRole.Arn
+      ApiId: !GetAtt API.ApiId
+      Name: AddGroup
+      LambdaConfig:
+        LambdaFunctionArn: !GetAtt AddGroup.Arn
+  APIToAddGroupAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: appsync.amazonaws.com
+          Action: sts:AssumeRole
+      RoleName: !Sub ${AWS::StackName}-API-to-AddGroup
+      Policies:
+        - PolicyName: Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt AddGroup.Arn
+Parameters:
+  StackTagName:
+    Type: String
+    Description: Stack Name (injected by Stackery at deployment time)
+  EnvironmentTagName:
+    Type: String
+    Description: Environment Name (injected by Stackery at deployment time)
