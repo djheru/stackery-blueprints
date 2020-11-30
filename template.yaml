@@ -72,6 +72,7 @@ Resources:
                 - !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${EnvironmentTagName}/*
+        - AWSLambdaENIManagementAccess
       Environment:
         Variables:
           DB_ID: !Ref DealershipDB
@@ -80,6 +81,12 @@ Resources:
           DB_ARN: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
           DB_ROOT_USER_SECRET_ARN: !Ref DealershipDBRootUserSecret
           SECRETS_NAMESPACE: !Sub /${EnvironmentTagName}/
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt VPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref VPCPrivateSubnet1
+          - !Ref VPCPrivateSubnet2
     Metadata:
       RuntimeOption: typescript
   APIMutationaddGroupResolver:
@@ -155,6 +162,7 @@ Resources:
                 - !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
         - AWSSecretsManagerGetSecretValuePolicy:
             SecretArn: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${EnvironmentTagName}/*
+        - AWSLambdaENIManagementAccess
       Environment:
         Variables:
           DB_ID: !Ref DealershipDB
@@ -163,6 +171,12 @@ Resources:
           DB_ARN: !Sub arn:aws:rds:${AWS::Region}:${AWS::AccountId}:cluster:${DealershipDB}
           DB_ROOT_USER_SECRET_ARN: !Ref DealershipDBRootUserSecret
           SECRETS_NAMESPACE: !Sub /${EnvironmentTagName}/
+      VpcConfig:
+        SecurityGroupIds:
+          - !GetAtt VPC.DefaultSecurityGroup
+        SubnetIds:
+          - !Ref VPCPrivateSubnet1
+          - !Ref VPCPrivateSubnet2
     Metadata:
       RuntimeOption: typescript
   APIToAddDealershipDataSource:
@@ -217,7 +231,9 @@ Resources:
       DBSubnetGroupDescription: !Sub
         - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Subnets
         - ResourceName: DealershipDB
-      SubnetIds: !Ref DefaultVPCSubnets
+      SubnetIds:
+        - !Ref VPCPrivateSubnet1
+        - !Ref VPCPrivateSubnet2
       Tags:
         - Key: Name
           Value: !Sub
@@ -228,16 +244,16 @@ Resources:
     Properties:
       GroupDescription: Database Security Group
       SecurityGroupIngress:
-        CidrIp: 0.0.0.0/0
-        FromPort: 5432
-        IpProtocol: tcp
-        ToPort: 5432
+        - CidrIp: 0.0.0.0/0
+          FromPort: 5432
+          IpProtocol: tcp
+          ToPort: 5432
       Tags:
         - Key: Name
           Value: !Sub
             - Stack ${StackTagName} Environment ${EnvironmentTagName} Database ${ResourceName} VPC Security Group
             - ResourceName: DealershipDB
-      VpcId: !Ref DefaultVPCId
+      VpcId: !Ref VPC
   DealershipDBRootUserSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -256,6 +272,225 @@ Resources:
       SecretId: !Ref DealershipDBRootUserSecret
       TargetId: !Ref DealershipDB
       TargetType: AWS::RDS::DBCluster
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName}
+            - ResourceName: VPC
+  VPCPrivateSubnet1:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Select
+        - 0
+        - !Cidr
+          - 10.0.0.0/16
+          - 4
+          - 14
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Private Subnet 1
+            - ResourceName: VPC
+      VpcId: !Ref VPC
+  VPCPrivateSubnet2:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Select
+        - 1
+        - !Cidr
+          - 10.0.0.0/16
+          - 4
+          - 14
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Private Subnet 2
+            - ResourceName: VPC
+      VpcId: !Ref VPC
+  VPCPublicSubnet1:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs ''
+      CidrBlock: !Select
+        - 2
+        - !Cidr
+          - 10.0.0.0/16
+          - 4
+          - 14
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Public Subnet 1
+            - ResourceName: VPC
+      VpcId: !Ref VPC
+  VPCPublicSubnet2:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs ''
+      CidrBlock: !Select
+        - 3
+        - !Cidr
+          - 10.0.0.0/16
+          - 4
+          - 14
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Public Subnet 2
+            - ResourceName: VPC
+      VpcId: !Ref VPC
+  VPCPrivateSubnet1NatGatewayEIP:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  VPCPrivateSubnet1NatGateway:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt VPCPrivateSubnet1NatGatewayEIP.AllocationId
+      SubnetId: !Ref VPCPublicSubnet1
+  VPCPrivateSubnet1RouteTable:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Private Subnet 1 Route Table
+            - ResourceName: VPC
+      VpcId: !Ref VPC
+  VPCPrivateSubnet1NatGatewayRoute:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPCPrivateSubnet1NatGateway
+      RouteTableId: !Ref VPCPrivateSubnet1RouteTable
+  VPCPrivateSubnet1RouteTableAssociation:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCPrivateSubnet1RouteTable
+      SubnetId: !Ref VPCPrivateSubnet1
+  VPCPrivateSubnet2NatGatewayEIP:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  VPCPrivateSubnet2NatGateway:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt VPCPrivateSubnet2NatGatewayEIP.AllocationId
+      SubnetId: !Ref VPCPublicSubnet2
+  VPCPrivateSubnet2RouteTable:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Private Subnet 2 Route Table
+            - ResourceName: VPC
+      VpcId: !Ref VPC
+  VPCPrivateSubnet2NatGatewayRoute:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref VPCPrivateSubnet2NatGateway
+      RouteTableId: !Ref VPCPrivateSubnet2RouteTable
+  VPCPrivateSubnet2RouteTableAssociation:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCPrivateSubnet2RouteTable
+      SubnetId: !Ref VPCPrivateSubnet2
+  VPCPublicSubnetsInternetGateway:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Public Subnets Internet Gateway
+            - ResourceName: VPC
+  VPCPublicSubnetsInternetGatewayAttachment:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref VPCPublicSubnetsInternetGateway
+      VpcId: !Ref VPC
+  VPCPublicSubnetsRouteTable:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - Stack ${StackTagName} Environment ${EnvironmentTagName} Virtual Network ${ResourceName} Public Subnets Route Table
+            - ResourceName: VPC
+      VpcId: !Ref VPC
+  VPCPublicSubnetsInternetGatewayRoute:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPCPublicSubnetsInternetGateway
+      RouteTableId: !Ref VPCPublicSubnetsRouteTable
+  VPCPublicSubnet1RouteTableAssociation:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCPublicSubnetsRouteTable
+      SubnetId: !Ref VPCPublicSubnet1
+  VPCPublicSubnet2RouteTableAssociation:
+    Metadata:
+      StackeryManaged: true
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref VPCPublicSubnetsRouteTable
+      SubnetId: !Ref VPCPublicSubnet2
 Parameters:
   StackTagName:
     Type: String
@@ -263,9 +498,3 @@ Parameters:
   EnvironmentTagName:
     Type: String
     Description: Environment Name (injected by Stackery at deployment time)
-  DefaultVPCId:
-    Type: AWS::EC2::VPC::Id
-    Description: AWS account-specific default VPC ID (injected by Stackery at deployment time)
-  DefaultVPCSubnets:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: AWS account-specific default VPC subnets (injected by Stackery at deployment time)

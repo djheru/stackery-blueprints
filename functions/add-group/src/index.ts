@@ -18,6 +18,7 @@ export const handler = async (event: any = {}): Promise<any> => {
           url = "",
           phone = "",
           activation = "enabled",
+          admins = [],
         } = {},
       } = {},
     } = event;
@@ -36,9 +37,10 @@ export const handler = async (event: any = {}): Promise<any> => {
     group.url = url;
     group.phone = phone;
     group.activation = activation;
+    group.admins = admins;
 
     const insertResult = await groupRepository.save(group);
-    console.log(insertResult);
+    console.log({ insertResult, group });
     return {
       id,
       name,
@@ -49,6 +51,7 @@ export const handler = async (event: any = {}): Promise<any> => {
       zip,
       url,
       phone,
+      admins,
     };
   } catch (e) {
     console.error(e.message);

@@ -9,7 +9,8 @@
     "test": "yarn run build"
   },
   "dependencies": {
-    "@dealership/utils": "*"
+    "@dealership/utils": "*",
+    "pg-native": "^3.0.0"
   },
   "devDependencies": {
     "ts-loader": "~8.0.0",
